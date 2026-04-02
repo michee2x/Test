@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunnelAI — Full Flow Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3a;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --gold: #f5c842;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--text); }
+
+  /* STEP INDICATOR */
+  .steps-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .step-item:hover { background: var(--surface2); }
+  .step-item.active { color: var(--text); }
+  .step-item.done { color: var(--accent3); }
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .step-item.active .step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step-item.done .step-num { background: var(--accent3); border-color: var(--accent3); color: #000; }
+  .step-arrow { color: var(--border); font-size: 0.8rem; padding: 0 2px; }
+
+  /* MAIN CONTAINER */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 50px 24px 80px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; animation: fadeUp 0.4s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TYPOGRAPHY */
+  .screen-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .screen-sub {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  /* BADGE */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(108,99,255,0.12);
+    border: 1px solid rgba(108,99,255,0.3);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* FORM */
+  .form-grid { display: flex; flex-direction: column; gap: 20px; }
+  .form-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .form-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-section-title span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+  label .req { color: var(--accent2); margin-left: 3px; }
+  .hint { font-size: 0.75rem; color: var(--muted); margin-top: -4px; }
+  input, textarea, select {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 11px 14px;
+    border-radius: 9px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+  }
+  select option { background: var(--surface2); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 28px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(108,99,255,0.35);
+  }
+  .btn-primary:hover { background: #7c75ff; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(108,99,255,0.45); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--surface); }
+  .btn-success {
+    background: var(--accent3);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(67,233,123,0.3);
+  }
+  .btn-success:hover { background: #5cf08e; transform: translateY(-1px); }
+  .btn-row { display: flex; gap: 12px; margin-top: 32px; align-items: center; }
+
+  /* LOADING */
+  .loading-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    gap: 20px;
+    text-align: center;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .loading-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .loading-step {
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.4s, color 0.4s;
+  }
+  .loading-step.visible { opacity: 1; }
+  .loading-step.done { color: var(--accent3); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  /* REPORT CARD */
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .report-card.full { grid-column: 1 / -1; }
+  .report-card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .score-big {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .score-big.green { color: var(--accent3); }
+  .score-big.yellow { color: var(--gold); }
+  .score-label { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+  .score-bar-wrap { height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 10px; }
+  .score-bar { height: 6px; border-radius: 3px; background: var(--accent3); transition: width 1s ease; }
+
+  .metric-list { display: flex; flex-direction: column; gap: 12px; }
+  .metric-item { display: flex; justify-content: space-between; align-items: center; }
+  .metric-name { font-size: 0.85rem; color: var(--muted); }
+  .metric-val { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+  .metric-badge {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .mb-green { background: rgba(67,233,123,0.12); color: var(--accent3); }
+  .mb-yellow { background: rgba(245,200,66,0.12); color: var(--gold); }
+  .mb-red { background: rgba(255,101,132,0.12); color: var(--accent2); }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: var(--text);
+  }
+
+  /* SALES COPY */
+  .copy-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .copy-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .copy-section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+  }
+  .copy-page-tag {
+    font-size: 0.72rem;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 600;
+    background: rgba(108,99,255,0.15);
+    color: var(--accent);
+  }
+  .copy-body { padding: 20px; font-size: 0.9rem; line-height: 1.75; color: var(--text); }
+  .copy-headline { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .copy-body em { color: var(--accent); font-style: normal; font-weight: 600; }
+
+  /* FUNNEL PAGES TABS */
+  .page-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .page-tab {
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+  }
+  .page-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .page-tab:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+  /* FUNNEL PAGE PREVIEW */
+  .funnel-preview {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .fp-hero {
+    padding: 60px 40px;
+    text-align: center;
+  }
+  .fp-hero.lead-hero { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+  .fp-hero.upsell-hero { background: linear-gradient(135deg, #0f3460 0%, #162447 100%); }
+  .fp-hero.downsell-hero { background: linear-gradient(135deg, #1b1b2f 0%, #212137 100%); }
+  .fp-hero.ty-hero { background: linear-gradient(135deg, #0d2137 0%, #1a3a2a 100%); }
+
+  .fp-eyebrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    opacity: 0.7;
+  }
+  .fp-h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+  .fp-sub {
+    font-size: 1rem;
+    line-height: 1.65;
+    opacity: 0.8;
+    max-width: 580px;
+    margin: 0 auto 30px;
+    color: #ddd;
+  }
+  .fp-cta {
+    display: inline-block;
+    padding: 16px 36px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    letter-spacing: 0.3px;
+    transition: transform 0.2s;
+  }
+  .fp-cta:hover { transform: translateY(-2px); }
+  .fp-cta.orange { background: #ff6b35; color: #fff; box-shadow: 0 6px 24px rgba(255,107,53,0.4); }
+  .fp-cta.gold { background: #f5c842; color: #000; box-shadow: 0 6px 24px rgba(245,200,66,0.4); }
+  .fp-cta.green { background: #43e97b; color: #000; box-shadow: 0 6px 24px rgba(67,233,123,0.4); }
+  .fp-cta.blue { background: #6c63ff; color: #fff; box-shadow: 0 6px 24px rgba(108,99,255,0.4); }
+
+  .fp-body { background: #f8f8fc; padding: 40px; }
+  .fp-body-dark { background: #111; padding: 40px; }
+  .fp-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 16px;
+  }
+  .fp-section-title.light { color: #fff; }
+  .fp-text { font-size: 0.92rem; color: #444; line-height: 1.7; margin-bottom: 16px; }
+  .fp-text.light { color: #bbb; }
+  .fp-bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .fp-bullets li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: #333;
+  }
+  .fp-bullets li.light { color: #ccc; }
+  .fp-check { color: #43e97b; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .fp-price-box {
+    background: #fff;
+    border: 2px solid #6c63ff;
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+    margin: 24px 0;
+  }
+  .fp-price-box.gold-box { border-color: #f5c842; }
+  .fp-price { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; color: #111; }
+  .fp-price-note { font-size: 0.82rem; color: #888; margin-top: 4px; }
+  .fp-guarantee {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #efffef;
+    border: 1px solid #c3f0c3;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+  .fp-guarantee-icon { font-size: 1.8rem; }
+  .fp-guarantee-text { font-size: 0.83rem; color: #2a6a2a; line-height: 1.5; }
+
+  .fp-form-wrap {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .fp-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    color: #111;
+    background: #fafafa;
+    outline: none;
+  }
+  .fp-input:focus { border-color: #6c63ff; }
+  .fp-form-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; color: #111; margin-bottom: 16px; text-align: center; }
+
+  /* Thank you */
+  .ty-check {
+    width: 80px; height: 80px;
+    background: rgba(67,233,123,0.15);
+    border: 2px solid var(--accent3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 20px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap { margin-bottom: 8px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+  .progress-track { height: 4px; background: var(--surface2); border-radius: 2px; }
+  .progress-fill { height: 4px; border-radius: 2px; background: var(--accent); transition: width 0.6s ease; }
+
+  /* DIVIDER */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* TOOLTIPS */
+  .info-tip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    font-size: 0.65rem;
+    color: var(--muted);
+    cursor: help;
+    margin-left: 5px;
+  }
+
+  @media (max-width: 640px) {
+    .report-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    nav { padding: 14px 18px; }
+    .steps-bar { display: none; }
+    .screen-title { font-size: 1.5rem; }
+    .fp-h1 { font-size: 1.5rem; }
+    .fp-hero { padding: 40px 20px; }
+    .fp-body { padding: 24px; }
+    .container { padding: 30px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Funnel<span>AI</span></div>
+  <div class="steps-bar">
+    <div class="step-item active" id="nav-s1" onclick="goTo(1)">
+      <div class="step-num">1</div> Offer Input
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" id="nav-s2" onclick="goTo(2)">
+      <div class="step-num">2</div> Sales Report
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" id="nav-s3" onclick="goTo(3)">
+      <div class="step-num">3</div> Sales Copy
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" id="nav-s4" onclick="goTo(4)">
+      <div class="step-num">4</div> Funnel Pages
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ======= SCREEN 1: OFFER INPUT ======= -->
+  <div class="screen active" id="screen-1">
+    <div class="badge">⚡ Step 1 of 4</div>
+    <h1 class="screen-title">Tell us about your offer</h1>
+    <p class="screen-sub">Fill in the structured fields below. The more detail you provide, the stronger your sales report, copy, and funnel will be.</p>
+
+    <div class="form-grid">
+
+      <div class="form-section">
+        <div class="form-section-title"><span></span> Core Offer Info</div>
+        <div class="field">
+          <label>Offer / Product Name <span class="req">*</span></label>
+          <input type="text" id="f-name" placeholder="e.g. The 6-Figure Freelance Blueprint" value="The 6-Figure Freelance Blueprint">
+        </div>
+        <div class="field">
+          <label>What does it do? <span class="req">*</span></label>
+          <p class="hint">What problem does it solve? What outcome does it deliver?</p>
+          <textarea id="f-what" rows="3" placeholder="e.g. Teaches designers and developers how to land high-paying freelance clients in 90 days without cold calling or a big portfolio">Teaches designers and developers how to land high-paying freelance clients in 90 days — without cold calling, a big portfolio, or years of experience.</textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Format <span class="req">*</span></label>
+            <select id="f-format">
+              <option value="Online Course" selected>Online Course</option>
+              <option>Coaching Program</option>
+              <option>Ebook / PDF</option>
+              <option>Software / SaaS</option>
+              <option>Physical Product</option>
+              <option>Membership</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Price Point <span class="req">*</span></label>
+            <input type="text" id="f-price" placeholder="e.g. $297" value="$297">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title"><span></span> Target Audience</div>
+        <div class="field">
+          <label>Who is this for? <span class="req">*</span></label>
+          <textarea id="f-who" rows="2" placeholder="Age, job, situation...">Designers and developers aged 22–38 who are stuck in 9-5 jobs or making less than $3k/month freelancing.</textarea>
+        </div>
+        <div class="field">
+          <label>Deep Desire <span class="req">*</span></label>
+          <p class="hint">Not the surface want — the emotional "why behind the why"</p>
+          <textarea id="f-desire" rows="2" placeholder="e.g. They don't just want money — they want freedom and respect">They want freedom — to work from anywhere, fire their boss, and be seen as a successful professional by their family.</textarea>
+        </div>
+        <div class="field">
+          <label>Biggest Fear if they don't buy</label>
+          <input type="text" id="f-fear" placeholder="e.g. Still stuck in a 9-5 in 3 years" value="Still grinding in a job they hate 2 years from now with nothing to show for it.">
+        </div>
+        <div class="field">
+          <label>What have they already tried?</label>
+          <input type="text" id="f-tried" placeholder="e.g. YouTube tutorials, cheap courses..." value="YouTube tutorials, free courses, applying on Upwork and Fiverr with no results.">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title"><span></span> Offer Strength</div>
+        <div class="field">
+          <label>Key Benefits (3–5 outcomes) <span class="req">*</span></label>
+          <textarea id="f-benefits" rows="3" placeholder="List the main outcomes the buyer gets...">Land your first $2k+ client within 90 days. Build a repeatable system for getting clients. Set your own rates with confidence. Work fully remote on your terms.</textarea>
+        </div>
+        <div class="field">
+          <label>Proof / Credibility</label>
+          <input type="text" id="f-proof" placeholder="Testimonials, results, credentials..." value="200+ students. Average student lands first client in 47 days. Featured in Freelancer Magazine.">
+        </div>
+        <div class="field">
+          <label>Unique Mechanism</label>
+          <p class="hint">What makes this different from everything else?</p>
+          <input type="text" id="f-unique" placeholder="e.g. The 'Warm Outreach Method' — no cold pitching" value="The 'Warm Pipeline Method' — uses existing social connections instead of cold outreach.">
+        </div>
+        <div class="field">
+          <label>Common Objections</label>
+          <input type="text" id="f-obj" placeholder="Reasons people hesitate to buy..." value="'I don't have enough experience', 'I don't have time', 'I've tried before and failed'">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title"><span></span> Context & Strategy</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Audience Awareness</label>
+            <select id="f-aware">
+              <option>Cold (unaware of problem)</option>
+              <option selected>Warm (aware of problem, not of you)</option>
+              <option>Hot (knows you, ready to buy)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Traffic Source</label>
+            <select id="f-traffic">
+              <option selected>Facebook / Instagram Ads</option>
+              <option>Email List</option>
+              <option>Organic / SEO</option>
+              <option>YouTube</option>
+              <option>Referral</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Funnel Type</label>
+            <select id="f-funnel">
+              <option selected>Lead Gen → Sales</option>
+              <option>Direct Sales</option>
+              <option>Webinar Funnel</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Money-Back Guarantee?</label>
+            <select id="f-guarantee">
+              <option selected>Yes — 30 days</option>
+              <option>Yes — 60 days</option>
+              <option>No guarantee</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Urgency / Scarcity Element</label>
+          <input type="text" id="f-urgency" placeholder="e.g. Bonus expires in 48 hours" value="Founding member pricing — price doubles after 100 students.">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="analyzeOffer()">
+        ⚡ Analyze Offer & Generate Report
+      </button>
+      <span style="font-size:0.8rem;color:var(--muted);">Takes ~3 seconds</span>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN LOADING ======= -->
+  <div class="screen" id="screen-loading">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-label">Analyzing your offer...</div>
+      <div class="loading-steps">
+        <div class="loading-step" id="ls1"><div class="dot"></div> Reading offer structure</div>
+        <div class="loading-step" id="ls2"><div class="dot"></div> Scoring market viability</div>
+        <div class="loading-step" id="ls3"><div class="dot"></div> Analyzing audience clarity</div>
+        <div class="loading-step" id="ls4"><div class="dot"></div> Evaluating offer strength</div>
+        <div class="loading-step" id="ls5"><div class="dot"></div> Generating sales report</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN 2: SALES REPORT ======= -->
+  <div class="screen" id="screen-2">
+    <div class="badge">📊 Step 2 of 4</div>
+    <h1 class="screen-title">Sales Report</h1>
+    <p class="screen-sub">Your offer has been analyzed. Here's how it scores across key dimensions — and what the copy should focus on.</p>
+
+    <div class="report-grid">
+      <div class="report-card">
+        <div class="report-card-title">Overall Score</div>
+        <div class="score-big green">87<span style="font-size:1.5rem;">/100</span></div>
+        <div class="score-label">Strong offer — high conversion potential</div>
+        <div class="score-bar-wrap" style="margin-top:14px;"><div class="score-bar" style="width:87%;"></div></div>
+      </div>
+      <div class="report-card">
+        <div class="report-card-title">Conversion Prediction</div>
+        <div class="score-big yellow">2.4<span style="font-size:1.5rem;">%</span></div>
+        <div class="score-label">Estimated cold traffic conversion rate</div>
+        <div class="score-bar-wrap" style="margin-top:14px;"><div class="score-bar" style="width:60%;background:var(--gold);"></div></div>
+      </div>
+      <div class="report-card full">
+        <div class="report-card-title">Dimension Scores</div>
+        <div class="metric-list">
+          <div class="metric-item">
+            <span class="metric-name">Market Viability</span>
+            <span class="metric-badge mb-green">92 / 100 — High demand, proven market</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-name">Audience Clarity</span>
+            <span class="metric-badge mb-green">88 / 100 — Very specific target persona</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-name">Offer Strength</span>
+            <span class="metric-badge mb-green">85 / 100 — Clear outcome, good proof</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-name">Price / Value Alignment</span>
+            <span class="metric-badge mb-green">90 / 100 — $297 is underpriced for this outcome</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-name">Objection Risk</span>
+            <span class="metric-badge mb-yellow">62 / 100 — "No experience" objection needs addressing</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-name">Uniqueness</span>
+            <span class="metric-badge mb-green">80 / 100 — Warm Pipeline Method is a strong differentiator</span>
+          </div>
+        </div>
+      </div>
+      <div class="report-card">
+        <div class="report-card-title">Primary Buyer Persona</div>
+        <div style="font-size:0.88rem;line-height:1.7;color:var(--text);">
+          <strong>Alex, 27</strong> — Junior developer at an agency. Makes $45k/year. Has been freelancing on the side for 6 months with inconsistent results. Follows Gary Vee, watches YouTube tutorials. Feels stuck and undervalued. Wants to quit his job by end of year.
+        </div>
+      </div>
+      <div class="report-card">
+        <div class="report-card-title">Emotional Triggers to Use</div>
+        <div class="tag-row">
+          <span class="tag">Freedom</span>
+          <span class="tag">Control</span>
+          <span class="tag">Status / Respect</span>
+          <span class="tag">Fear of wasted time</span>
+          <span class="tag">Belonging</span>
+          <span class="tag">Proven path</span>
+        </div>
+      </div>
+      <div class="report-card full">
+        <div class="report-card-title">Recommended Funnel Type</div>
+        <div style="font-size:0.88rem;line-height:1.75;color:var(--text);">
+          <strong>Lead Gen → VSL Sales Page → Upsell → Downsell → Thank You</strong><br>
+          Capture email with a free "Client-Getting Cheat Sheet" on the lead page. Warm them up before the pitch. Use a video sales letter on the main offer page. Upsell a 1-on-1 coaching call. Downsell a lighter DIY resource if they decline.
+        </div>
+      </div>
+      <div class="report-card full">
+        <div class="report-card-title">⚠️ Key Weaknesses to Address in Copy</div>
+        <ul class="fp-bullets" style="padding:0;">
+          <li><span style="color:var(--accent2);">●</span> <span style="color:var(--text);font-size:0.87rem;">The "no experience needed" claim must be proven early — show beginner success stories</span></li>
+          <li><span style="color:var(--accent2);">●</span> <span style="color:var(--text);font-size:0.87rem;">"I don't have time" objection needs a time-per-week commitment stated clearly</span></li>
+          <li><span style="color:var(--accent2);">●</span> <span style="color:var(--text);font-size:0.87rem;">Founding member urgency must feel real — add a visible counter or deadline</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goToWithLoad(3, 'Generating sales copy...')">
+        ✍️ Generate Sales Copy
+      </button>
+      <button class="btn btn-secondary" onclick="goTo(1)">← Edit Offer</button>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN 3: SALES COPY ======= -->
+  <div class="screen" id="screen-3">
+    <div class="badge">✍️ Step 3 of 4</div>
+    <h1 class="screen-title">Sales Copy</h1>
+    <p class="screen-sub">Generated from the sales report. Each section maps to a funnel page. This is the raw copy your pages are built from.</p>
+
+    <div class="copy-section">
+      <div class="copy-section-header">
+        <div class="copy-section-label">Lead Page — Headline & Hook</div>
+        <div class="copy-page-tag">Lead Page</div>
+      </div>
+      <div class="copy-body">
+        <div class="copy-headline">"Free Cheat Sheet Reveals: The 5-Step System Designers & Devs Are Using to Land $2k+ Clients in 90 Days — Without Cold Calling or a Big Portfolio"</div>
+        <p>If you've been grinding on Upwork, watching tutorials, and still can't land consistent clients… this is why. And it has nothing to do with your skill level.</p>
+        <p>Enter your email below and get instant access to the <em>Freelance Client Cheat Sheet</em> — the same framework 200+ students have used to go from zero to booked out.</p>
+      </div>
+    </div>
+
+    <div class="copy-section">
+      <div class="copy-section-header">
+        <div class="copy-section-label">Sales Page — VSL Script Opening</div>
+        <div class="copy-page-tag">Upsell Pitch</div>
+      </div>
+      <div class="copy-body">
+        <div class="copy-headline">"If You're a Designer or Developer Still Trading Hours for Dollars — What I'm About to Share Will Change That Forever"</div>
+        <p>Two years ago I was exactly where you are. Talented. Working hard. But making inconsistent money and terrified to raise my rates. I tried Upwork. I applied to hundreds of jobs. I got nowhere.</p>
+        <p>Then I discovered something that changed everything: <em>the clients worth working for aren't on job boards</em>. They're already in your network. You just don't know how to reach them yet.</p>
+        <p>That's exactly what the <em>6-Figure Freelance Blueprint</em> teaches you — a step-by-step system to turn your existing connections into a $6k/month client pipeline. No cold pitching. No chasing. No waiting.</p>
+      </div>
+    </div>
+
+    <div class="copy-section">
+      <div class="copy-section-header">
+        <div class="copy-section-label">Upsell Page — Headline & Pitch</div>
+        <div class="copy-page-tag">Upsell Page</div>
+      </div>
+      <div class="copy-body">
+        <div class="copy-headline">"Wait — Before You Access the Course, Get a 1-on-1 Strategy Call and Have Me Map Out Your Entire Client Plan"</div>
+        <p>You've made a great decision. But here's the truth: <em>most people who buy courses never finish them</em>. Not because the content is bad — but because they get stuck and have no one to ask.</p>
+        <p>Add a private 60-minute strategy session and I'll personally review your offer, your positioning, and map out your first 3 client targets. You walk away with a custom plan — not just a course.</p>
+        <p>One-time offer. Only available right now. <strong>Add it for just $197.</strong></p>
+      </div>
+    </div>
+
+    <div class="copy-section">
+      <div class="copy-section-header">
+        <div class="copy-section-label">Downsell Page — Softer Offer</div>
+        <div class="copy-page-tag">Downsell Page</div>
+      </div>
+      <div class="copy-body">
+        <div class="copy-headline">"Okay — No Problem. But Before You Go, Grab the 'Client Acquisition Swipe File' for Just $27"</div>
+        <p>If a full strategy call isn't right for you right now, that's completely fine. But I don't want you to miss out on the #1 tool our top students say made the biggest difference.</p>
+        <p>The <em>Client Acquisition Swipe File</em> is a plug-and-play collection of 30 outreach messages, proposal templates, and rate scripts — everything you need to reach out and close clients with confidence. <strong>One payment of $27.</strong></p>
+      </div>
+    </div>
+
+    <div class="copy-section">
+      <div class="copy-section-header">
+        <div class="copy-section-label">Thank You Page — Confirmation & Next Steps</div>
+        <div class="copy-page-tag">Thank You Page</div>
+      </div>
+      <div class="copy-body">
+        <div class="copy-headline">"You're In! Here's What Happens Next..."</div>
+        <p>Welcome to the 6-Figure Freelance Blueprint community. Your login details are on their way to your inbox right now.</p>
+        <p>While you wait — watch the <em>Quick Start video</em> below. It'll show you exactly what to do in the first 24 hours to get momentum fast.</p>
+        <p>And remember: <em>your 30-day money-back guarantee starts today</em>. If you do the work and don't see results, email us and we'll make it right. No questions asked.</p>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="goToWithLoad(4, 'Building your funnel pages...')">
+        🚀 Build Funnel Pages
+      </button>
+      <button class="btn btn-secondary" onclick="goTo(2)">← Back to Report</button>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN 4: FUNNEL PAGES ======= -->
+  <div class="screen" id="screen-4">
+    <div class="badge">🚀 Step 4 of 4</div>
+    <h1 class="screen-title">Your Funnel Pages</h1>
+    <p class="screen-sub">All 4 pages have been generated from your sales copy. Click each tab to preview.</p>
+
+    <div class="page-tabs">
+      <div class="page-tab active" onclick="showPage('lead')">📧 Lead Page</div>
+      <div class="page-tab" onclick="showPage('upsell')">💰 Upsell Page</div>
+      <div class="page-tab" onclick="showPage('downsell')">🔽 Downsell Page</div>
+      <div class="page-tab" onclick="showPage('thankyou')">✅ Thank You Page</div>
+    </div>
+
+    <!-- LEAD PAGE -->
+    <div class="funnel-preview" id="fp-lead">
+      <div class="fp-hero lead-hero">
+        <div class="fp-eyebrow" style="color:#a0c4ff;">Free Cheat Sheet For Designers & Developers</div>
+        <div class="fp-h1">The 5-Step System to Land $2k+ Clients in 90 Days — Without Cold Calling</div>
+        <div class="fp-sub">200+ students have used this exact framework to escape the 9-5 and build a fully remote freelance business. Grab your free copy below.</div>
+        <div class="fp-form-wrap">
+          <div class="fp-form-title">Get Instant Free Access →</div>
+          <input class="fp-input" type="text" placeholder="Your first name">
+          <input class="fp-input" type="email" placeholder="Your best email address">
+          <button class="fp-cta orange" style="width:100%;display:block;">Yes! Send Me the Cheat Sheet →</button>
+          <div style="font-size:0.72rem;color:#888;text-align:center;margin-top:10px;">🔒 No spam. Unsubscribe anytime.</div>
+        </div>
+      </div>
+      <div class="fp-body">
+        <div class="fp-section-title">What You'll Discover Inside:</div>
+        <ul class="fp-bullets">
+          <li><span class="fp-check">✓</span> The #1 reason most freelancers never land consistent clients (and it's not your portfolio)</li>
+          <li><span class="fp-check">✓</span> The Warm Pipeline Method — how to get clients from your existing network without feeling awkward</li>
+          <li><span class="fp-check">✓</span> How to set your rates with confidence and stop leaving money on the table</li>
+          <li><span class="fp-check">✓</span> A 47-day action plan used by 200+ students to land their first high-paying client</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- UPSELL PAGE -->
+    <div class="funnel-preview" id="fp-upsell" style="display:none;">
+      <div class="fp-hero upsell-hero">
+        <div class="fp-eyebrow" style="color:#90caf9;">One-Time Offer — Only Available Right Now</div>
+        <div class="fp-h1">Get a Private 1-on-1 Strategy Call and Have Me Map Out Your Entire Client Plan</div>
+        <div class="fp-sub">You've got the course. Now get a custom roadmap. In 60 minutes I'll personally review your positioning and give you your first 3 client targets.</div>
+        <button class="fp-cta gold">Yes! Add the Strategy Call for $197 →</button>
+        <div style="color:#888;font-size:0.78rem;margin-top:14px;cursor:pointer;">No thanks, I'll figure it out on my own</div>
+      </div>
+      <div class="fp-body">
+        <div class="fp-section-title">What's Included in Your Strategy Session:</div>
+        <ul class="fp-bullets">
+          <li><span class="fp-check">✓</span> 60-minute 1-on-1 Zoom call with the course creator</li>
+          <li><span class="fp-check">✓</span> Full review of your offer and positioning</li>
+          <li><span class="fp-check">✓</span> Your first 3 warm outreach targets identified and scripted</li>
+          <li><span class="fp-check">✓</span> Rate-setting recommendation based on your market</li>
+          <li><span class="fp-check">✓</span> Recording of the call sent to you within 24 hours</li>
+        </ul>
+        <div class="fp-price-box">
+          <div class="fp-price">$197</div>
+          <div class="fp-price-note">One-time add-on. Never offered at this price again.</div>
+          <button class="fp-cta gold" style="margin-top:18px;width:100%;display:block;">Add Strategy Call — $197</button>
+        </div>
+        <div class="fp-guarantee">
+          <div class="fp-guarantee-icon">🛡️</div>
+          <div class="fp-guarantee-text">Covered by our 30-day guarantee. If you're not satisfied with your session, we'll refund it — no questions asked.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOWNSELL PAGE -->
+    <div class="funnel-preview" id="fp-downsell" style="display:none;">
+      <div class="fp-hero downsell-hero">
+        <div class="fp-eyebrow" style="color:#ce93d8;">Wait — One Last Thing Before You Go</div>
+        <div class="fp-h1">Grab the Client Acquisition Swipe File — 30 Plug-and-Play Templates for Just $27</div>
+        <div class="fp-sub">Not ready for a 1-on-1 call? No problem. Get the exact outreach messages, proposal templates, and rate scripts our top students swear by.</div>
+        <button class="fp-cta blue">Yes! I Want the Swipe File for $27 →</button>
+        <div style="color:#888;font-size:0.78rem;margin-top:14px;cursor:pointer;">No thanks, I don't want the templates</div>
+      </div>
+      <div class="fp-body">
+        <div class="fp-section-title">What's Inside the Swipe File:</div>
+        <ul class="fp-bullets">
+          <li><span class="fp-check">✓</span> 10 warm outreach message templates (LinkedIn, email, DMs)</li>
+          <li><span class="fp-check">✓</span> 8 proposal templates for different project types</li>
+          <li><span class="fp-check">✓</span> 5 rate negotiation scripts for raising your prices</li>
+          <li><span class="fp-check">✓</span> 7 follow-up sequences that close without feeling pushy</li>
+        </ul>
+        <div class="fp-price-box gold-box">
+          <div class="fp-price" style="color:#b8860b;">$27</div>
+          <div class="fp-price-note">One-time payment. Instant digital download.</div>
+          <button class="fp-cta green" style="margin-top:18px;width:100%;display:block;">Get Instant Access — $27</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- THANK YOU PAGE -->
+    <div class="funnel-preview" id="fp-thankyou" style="display:none;">
+      <div class="fp-hero ty-hero">
+        <div class="ty-check">✓</div>
+        <div class="fp-eyebrow" style="color:#a5d6a7;">Purchase Confirmed</div>
+        <div class="fp-h1">You're In! Welcome to the 6-Figure Freelance Blueprint</div>
+        <div class="fp-sub">Your login details are heading to your inbox right now. Check your spam if you don't see it in 2 minutes.</div>
+        <button class="fp-cta green">Access Your Course Dashboard →</button>
+      </div>
+      <div class="fp-body">
+        <div class="fp-section-title">Your Next 3 Steps:</div>
+        <ul class="fp-bullets">
+          <li><span class="fp-check" style="background:#6c63ff;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">1</span> Check your email and confirm your account</li>
+          <li><span class="fp-check" style="background:#6c63ff;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">2</span> Watch the Quick Start video in Module 1 (it's only 8 minutes)</li>
+          <li><span class="fp-check" style="background:#6c63ff;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">3</span> Join our private community and introduce yourself</li>
+        </ul>
+        <div class="fp-guarantee" style="margin-top:24px;">
+          <div class="fp-guarantee-icon">🛡️</div>
+          <div class="fp-guarantee-text">Your 30-day money-back guarantee is active starting today. If you do the work and don't get results, email us and we'll refund you in full.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:24px;">
+      <button class="btn btn-primary">🌐 Publish Funnel</button>
+      <button class="btn btn-secondary" onclick="goTo(3)">← Back to Copy</button>
+      <button class="btn btn-secondary" onclick="goTo(1)" style="margin-left:auto;">🔄 Start New Funnel</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let currentScreen = 1;
+
+  function goTo(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + n).classList.add('active');
+    // Update nav
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('nav-s' + i);
+      if (!el) continue;
+      el.classList.remove('active', 'done');
+      if (i < n) el.classList.add('done');
+      if (i === n) el.classList.add('active');
+    }
+    currentScreen = n;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function analyzeOffer() {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-loading').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const steps = ['ls1','ls2','ls3','ls4','ls5'];
+    steps.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('visible');
+        if (i > 0) document.getElementById(steps[i-1]).classList.add('done');
+      }, i * 600);
+    });
+
+    setTimeout(() => {
+      document.getElementById('ls5').classList.add('done');
+      goTo(2);
+    }, 3400);
+  }
+
+  function goToWithLoad(n, label) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const loading = document.getElementById('screen-loading');
+    loading.classList.add('active');
+    loading.querySelector('.loading-label').textContent = label;
+    loading.querySelectorAll('.loading-step').forEach(s => { s.classList.remove('visible','done'); });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const steps = ['ls1','ls2','ls3','ls4','ls5'];
+    steps.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('visible');
+        if (i > 0) document.getElementById(steps[i-1]).classList.add('done');
+      }, i * 500);
+    });
+
+    setTimeout(() => {
+      document.getElementById('ls5').classList.add('done');
+      goTo(n);
+    }, 2800);
+  }
+
+  function showPage(name) {
+    ['lead','upsell','downsell','thankyou'].forEach(p => {
+      document.getElementById('fp-' + p).style.display = 'none';
+    });
+    document.getElementById('fp-' + name).style.display = 'block';
+
+    document.querySelectorAll('.page-tab').forEach((t, i) => {
+      t.classList.remove('active');
+    });
+    const map = { lead:0, upsell:1, downsell:2, thankyou:3 };
+    document.querySelectorAll('.page-tab')[map[name]].classList.add('active');
+  }
+</script>
+</body>
+</html>
